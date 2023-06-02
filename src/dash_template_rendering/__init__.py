@@ -10,6 +10,7 @@ import importlib
 import bs4
 
 from flask import render_template, render_template_string
+from jinja2 import Template
 from markupsafe import Markup
 
 import plotly
@@ -18,12 +19,22 @@ from dash.development.base_component import Component
 
 
 def to_json_plotly_tag(component: Component):
-    return Markup(f"<plotly>{plotly.io.json.to_json_plotly(component)}</plotly>")
+    return Markup(
+        f"<plotly>{plotly.io.json.to_json_plotly(component)}</plotly>",
+    )
 
 
 DASH_TAGS_MAPPING = dict(
-    map(lambda x: (x[0].lower(), x[1]), inspect.getmembers(dash.html, inspect.isclass))
+    map(
+        lambda x: (x[0].lower(), x[1]),
+        inspect.getmembers(dash.html, inspect.isclass),
+    )
 )
+
+NAMESPACE_MAPPING = {
+    "dash_html_components": "dash.html",
+    "dash_core_components": "dash.dcc",
+}
 
 
 def _parse_template(template_string: str) -> Component:
@@ -32,7 +43,8 @@ def _parse_template(template_string: str) -> Component:
     if len(plotly_elements) >= 1:
         if len(plotly_elements) > 1:
             warnings.warn(
-                "Template Tag has more than one main tag, which is not supported. "
+                "Template Tag has more than one main tag, "
+                "which is not supported. "
                 "Only the first tag is used."
             )
         return plotly_elements[0]
@@ -42,7 +54,7 @@ def _parse_template(template_string: str) -> Component:
 
 def _parse_elements(
     html_elements: typing.Iterable[bs4.PageElement],
-) -> list[str | dict | Component]:
+) -> typing.List[Component]:
     plotly_elements = []
     for child in html_elements:
         if isinstance(child, bs4.element.Tag):
@@ -59,7 +71,8 @@ def _parse_elements(
                 or isinstance(child, bs4.element.RubyTextString)
             ):
                 warnings.warn(
-                    f"Node type {type(child)} is not supported in templates yet. Node will be skipped."
+                    f"Node type {type(child)} is not supported "
+                    "in templates yet. Node will be skipped."
                 )
                 continue
             else:
@@ -68,15 +81,25 @@ def _parse_elements(
                     plotly_elements.append(text)
         else:
             warnings.warn(
-                f"Node type {type(child)} is not supported in templates yet. Node will be skipped."
+                f"Node type {type(child)} is not supported "
+                "in templates yet. Node will be skipped."
             )
             continue
 
     return plotly_elements
 
 
+def _resolve_namespace(namespace: str) -> str:
+    if namespace in NAMESPACE_MAPPING.keys():
+        return NAMESPACE_MAPPING[namespace]
+    return namespace
+
+
 def _parse_dash_json(data: dict) -> Component:
-    component_class = getattr(importlib.import_module(data["namespace"]), data["type"])
+    component_class = getattr(
+        importlib.import_module(_resolve_namespace(data["namespace"])),
+        data["type"],
+    )
     element = component_class(**data["props"])
     if hasattr(element, "children") and element.children is not None:
         if isinstance(element.children, dict):
@@ -90,7 +113,7 @@ def _parse_dash_json(data: dict) -> Component:
     return element
 
 
-def _parse_tag(tag: bs4.Tag) -> dict | Component:
+def _parse_tag(tag: bs4.Tag) -> Component:
     if tag.name == "plotly":
         return _parse_dash_json(data=json.loads(tag.text))
     elif tag.name.lower() in DASH_TAGS_MAPPING.keys():
@@ -109,18 +132,35 @@ def _parse_tag(tag: bs4.Tag) -> dict | Component:
             elif "className" in available_properties:
                 tag_attributes["className"] = tag_attributes.pop("class")
 
-        children = list(filter(lambda x: x is not None, _parse_elements(tag.contents)))
+        if "style" in tag_attributes and "style" in available_properties:
+            tag_attributes["style"] = dict(
+                map(
+                    lambda x: x.partition(":")[::2],
+                    tag_attributes["style"].split(";"),
+                )
+            )
+
+        children = list(
+            filter(lambda x: x is not None, _parse_elements(tag.contents)),
+        )
         if len(children) > 0:
             tag_attributes["children"] = children
 
         try:
             return component_class(**tag_attributes)
         except TypeError as e:
+            pretty_tag = textwrap.indent(
+                textwrap.shorten(tag.prettify(), width=200), "+ "
+            )
             raise TypeError(
-                f"Generating dash component from html tag failed.\nHTML Tag:\n{textwrap.indent(textwrap.shorten(tag.prettify(), width=200), '+ ')}\nDash Failure:\n{textwrap.indent(e.args[0], '+ ')}"
+                f"Generating dash component from html tag failed.\n"
+                f"HTML Tag:\n"
+                f"{pretty_tag}\n"
+                f"Dash Failure:\n{textwrap.indent(e.args[0], '+ ')}"
             )
     raise TypeError(
-        f'Generating dash component from html tag failed. No corresponding dash component found for html tag "{tag.name}".'
+        f"Generating dash component from html tag failed. "
+        f'No corresponding dash component found for html tag "{tag.name}".'
     )
 
 
@@ -133,7 +173,10 @@ def _parse_navigable_string(navigable_string: bs4.NavigableString) -> str:
 
 
 def render_dash_template(
-    template_name_or_list: str | list[str], **context: typing.Any
+    template_name_or_list: typing.Union[
+        str, Template, typing.List[typing.Union[str, Template]]
+    ],
+    **context: typing.Any,
 ) -> Component:
     with dash.get_app().server.app_context():
         return _parse_template(
@@ -141,7 +184,10 @@ def render_dash_template(
         )
 
 
-def render_dash_template_string(source: str, **context: typing.Any) -> Component:
+def render_dash_template_string(
+    source: str,
+    **context: typing.Any,
+) -> Component:
     with dash.get_app().server.app_context():
         return _parse_template(
             template_string=render_template_string(source, **context)
@@ -149,7 +195,7 @@ def render_dash_template_string(source: str, **context: typing.Any) -> Component
 
 
 class TemplateRenderer:
-    def __init__(self, dash: dash.Dash | None = None) -> None:
+    def __init__(self, dash: typing.Optional[dash.Dash] = None) -> None:
         self._dash = None
 
         if dash is not None:
