@@ -1,6 +1,5 @@
 import pytest
 import json
-from bs4 import BeautifulSoup
 from flask import render_template_string
 import plotly
 
@@ -9,8 +8,11 @@ from dash_template_rendering import render_dash_template_string
 
 @pytest.mark.usefixtures("client")
 def test_empty_template():
-    with pytest.raises(ValueError, match="Empty template in use. Please remove."):
-        template = render_dash_template_string(source="")
+    with pytest.raises(
+        ValueError,
+        match="Empty template in use. Please remove.",
+    ):
+        render_dash_template_string(source="")
 
 
 @pytest.mark.usefixtures("client")

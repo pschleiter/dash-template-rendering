@@ -1,6 +1,6 @@
 import pytest
-from dash import Dash, html
 from flask import Flask
+from dash import Dash, html
 from dash_template_rendering import TemplateRenderer
 
 
@@ -36,16 +36,17 @@ def client(app):
     context.pop()
 
 
-import pytest as pytest
-import dash
-
-
 @pytest.fixture
 def template_string():
     return """
 <div class="container">
     <div class="row">
-        <div class="col-3 col-md-6">first row - small column</div><div class="col-9">first row - large column</div>
+        <div class="col-3 col-md-6">
+            first row - small column
+        </div>
+        <div class="col-9">
+            first row - large column
+        </div>
     </div>
     <!-- HTML comment -->
     {{ dash_row|plotly }}
@@ -55,30 +56,36 @@ def template_string():
 
 @pytest.fixture
 def dash_row():
-    return dash.html.Div(
+    return html.Div(
         className="row",
         children=[
-            dash.html.Div(
-                className="col-9 col-md-6", children="second row - large column"
+            html.Div(
+                className="col-9 col-md-6",
+                children="second row - large column",
             ),
-            dash.html.Div(className="col-3", children="second row - small column"),
+            html.Div(
+                className="col-3",
+                children="second row - small column",
+            ),
         ],
     )
 
 
 @pytest.fixture
 def template_dash(dash_row):
-    return dash.html.Div(
+    return html.Div(
         className="container",
         children=[
-            dash.html.Div(
+            html.Div(
                 className="row",
                 children=[
-                    dash.html.Div(
-                        className="col-3 col-md-6", children="first row - small column"
+                    html.Div(
+                        className="col-3 col-md-6",
+                        children="first row - small column",
                     ),
-                    dash.html.Div(
-                        className="col-9", children="first row - large column"
+                    html.Div(
+                        className="col-9",
+                        children="first row - large column",
                     ),
                 ],
             ),
