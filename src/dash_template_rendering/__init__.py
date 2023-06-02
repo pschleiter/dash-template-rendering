@@ -10,6 +10,7 @@ import importlib
 import bs4
 
 from flask import render_template, render_template_string
+from jinja2 import Template
 from markupsafe import Markup
 
 import plotly
@@ -24,6 +25,11 @@ def to_json_plotly_tag(component: Component):
 DASH_TAGS_MAPPING = dict(
     map(lambda x: (x[0].lower(), x[1]), inspect.getmembers(dash.html, inspect.isclass))
 )
+
+NAMESPACE_MAPPING = {
+    "dash_html_components": "dash.html",
+    "dash_core_components": "dash.dcc",
+}
 
 
 def _parse_template(template_string: str) -> Component:
@@ -42,7 +48,7 @@ def _parse_template(template_string: str) -> Component:
 
 def _parse_elements(
     html_elements: typing.Iterable[bs4.PageElement],
-) -> list[str | dict | Component]:
+) -> typing.List[Component]:
     plotly_elements = []
     for child in html_elements:
         if isinstance(child, bs4.element.Tag):
@@ -75,8 +81,16 @@ def _parse_elements(
     return plotly_elements
 
 
+def _resolve_namespace(namespace: str) -> str:
+    if namespace in NAMESPACE_MAPPING.keys():
+        return NAMESPACE_MAPPING[namespace]
+    return namespace
+
+
 def _parse_dash_json(data: dict) -> Component:
-    component_class = getattr(importlib.import_module(data["namespace"]), data["type"])
+    component_class = getattr(
+        importlib.import_module(_resolve_namespace(data["namespace"])), data["type"]
+    )
     element = component_class(**data["props"])
     if hasattr(element, "children") and element.children is not None:
         if isinstance(element.children, dict):
@@ -90,7 +104,7 @@ def _parse_dash_json(data: dict) -> Component:
     return element
 
 
-def _parse_tag(tag: bs4.Tag) -> dict | Component:
+def _parse_tag(tag: bs4.Tag) -> Component:
     if tag.name == "plotly":
         return _parse_dash_json(data=json.loads(tag.text))
     elif tag.name.lower() in DASH_TAGS_MAPPING.keys():
@@ -108,6 +122,11 @@ def _parse_tag(tag: bs4.Tag) -> dict | Component:
                 tag_attributes["class_name"] = tag_attributes.pop("class")
             elif "className" in available_properties:
                 tag_attributes["className"] = tag_attributes.pop("class")
+
+        if "style" in tag_attributes and "style" in available_properties:
+            tag_attributes["style"] = dict(
+                map(lambda x: x.partition(":")[::2], tag_attributes["style"].split(";"))
+            )
 
         children = list(filter(lambda x: x is not None, _parse_elements(tag.contents)))
         if len(children) > 0:
@@ -133,7 +152,10 @@ def _parse_navigable_string(navigable_string: bs4.NavigableString) -> str:
 
 
 def render_dash_template(
-    template_name_or_list: str | list[str], **context: typing.Any
+    template_name_or_list: typing.Union[
+        str, Template, typing.List[typing.Union[str, Template]]
+    ],
+    **context: typing.Any,
 ) -> Component:
     with dash.get_app().server.app_context():
         return _parse_template(
@@ -149,7 +171,7 @@ def render_dash_template_string(source: str, **context: typing.Any) -> Component
 
 
 class TemplateRenderer:
-    def __init__(self, dash: dash.Dash | None = None) -> None:
+    def __init__(self, dash: typing.Optional[dash.Dash] = None) -> None:
         self._dash = None
 
         if dash is not None:
