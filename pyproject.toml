@@ -28,7 +28,7 @@ dependencies = [
     "dash",
     "plotly",
     "flask",
-    "markup",
+    "markupsafe",
     "Jinja2",
     "beautifulsoup4",
 ]
