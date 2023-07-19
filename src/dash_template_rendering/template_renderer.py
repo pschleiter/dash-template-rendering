@@ -44,8 +44,8 @@ class TemplateRenderer:
             self.init_dash(dash=dash)
 
     def init_dash(self, dash: dash.Dash) -> None:
-        """Initialize a dash application fo use with this extension instance. This must be
-        called before the first templates are rendered.
+        """Initialize a dash application fo use with this extension instance. This must
+        be called before the first templates are rendered.
 
         :param dash: The Dash application to initialize.
         """
