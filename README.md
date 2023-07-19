@@ -1,4 +1,10 @@
 # dash-template-rendering
+![PyPI - Licence](https://img.shields.io/pypi/l/dash-template-rendering)
+[![Current version on PyPI](https://img.shields.io/pypi/v/dash-template-rendering)](https://pypi.org/project/dash-template-rendering/)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/dash-template-rendering.svg?color=dark-green)](https://pypi.org/project/dash-template-rendering/)
+[![Build Status](https://github.com/pschleiter/dash-template-rendering/workflows/build/badge.svg)](https://github.com/pschleiter/dash-template-rendering/actions)
+[![codecov](https://codecov.io/gh/pschleiter/dash-template-rendering/branch/main/graph/badge.svg?token=148H4RN9NN)](https://codecov.io/gh/pschleiter/dash-template-rendering)
+
 Dash Python extention for rendering Jinja2 templates.
 
 
