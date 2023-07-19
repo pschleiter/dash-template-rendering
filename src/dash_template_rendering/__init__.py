@@ -1,6 +1,7 @@
 __version__ = "0.0.1-alpha1"
 
 import json
+import re
 import typing
 import inspect
 import warnings
@@ -126,19 +127,9 @@ def _parse_tag(tag: bs4.Tag) -> Component:
             {k: " ".join(v) for k, v in tag_attributes.items() if isinstance(v, list)}
         )
 
-        if "class" in tag_attributes:
-            if "class_name" in available_properties:
-                tag_attributes["class_name"] = tag_attributes.pop("class")
-            elif "className" in available_properties:
-                tag_attributes["className"] = tag_attributes.pop("class")
-
-        if "style" in tag_attributes and "style" in available_properties:
-            tag_attributes["style"] = dict(
-                map(
-                    lambda x: x.partition(":")[::2],
-                    tag_attributes["style"].split(";"),
-                )
-            )
+        _apply_special_dash_attribute_naming(
+            available_properties=available_properties, tag_attributes=tag_attributes
+        )
 
         children = list(
             filter(lambda x: x is not None, _parse_elements(tag.contents)),
@@ -162,6 +153,30 @@ def _parse_tag(tag: bs4.Tag) -> Component:
         f"Generating dash component from html tag failed. "
         f'No corresponding dash component found for html tag "{tag.name}".'
     )
+
+
+def _apply_special_dash_attribute_naming(available_properties, tag_attributes):
+    for dash_name in available_properties:
+        if dash_name.lower() in tag_attributes:
+            tag_attributes[dash_name] = tag_attributes.pop(dash_name.lower())
+
+    if "class_name" in available_properties and "class" in tag_attributes:
+        tag_attributes["class_name"] = tag_attributes.pop("class")
+    if "className" in available_properties and "class" in tag_attributes:
+        tag_attributes["className"] = tag_attributes.pop("class")
+
+    if "style" in tag_attributes and "style" in available_properties:
+        styles = {}
+        for style in tag_attributes["style"].split(";"):
+            key, _, value = style.partition(":")
+            key = re.sub(r"\-(\w)", lambda y: y.group(1).upper(), key).strip()
+            value = value.strip()
+            if len(key) == 0:
+                continue
+
+            styles[key] = value
+
+        tag_attributes["style"] = styles
 
 
 def _parse_navigable_string(navigable_string: bs4.NavigableString) -> str:

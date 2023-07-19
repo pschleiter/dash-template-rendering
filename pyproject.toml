@@ -4,9 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dash-template-rendering"
-authors = [
-    {name = "Patrick Schleiter", email = "git.pschleiter@gmail.com"},
-]
+authors = [{ name = "Patrick Schleiter", email = "git.pschleiter@gmail.com" }]
 description = "Dash Python extention for rendering Jinja2 templates."
 requires-python = ">=3.8"
 classifiers = [
@@ -38,8 +36,8 @@ dynamic = ["version", "readme"]
 where = ["src"]
 
 [tool.setuptools.dynamic]
-version = {attr = "dash_template_rendering.__version__"}
-readme = {file = ["README.md"], content-type = "text/markdown"}
+version = { attr = "dash_template_rendering.__version__" }
+readme = { file = ["README.md"], content-type = "text/markdown" }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -47,7 +45,7 @@ testpaths = ["tests"]
 [tool.tox]
 legacy_tox_ini = """
     [tox]
-    envlist = py38, py39, py310, flake8, docs
+    envlist = py38, py39, py310, flake8, coverage
     skip_missing_interpreters = true
 
     [gh-actions]
@@ -73,9 +71,4 @@ legacy_tox_ini = """
         -r requirements/tests.txt
     commands =
         pytest --cov=dash_template_rendering --cov-branch
-
-    [testenv:docs]
-    deps =
-        -r requirements/docs.txt
-    commands = sphinx-build -W -b html -d {envtmpdir}/doctrees docs {envtmpdir}/html
 """
