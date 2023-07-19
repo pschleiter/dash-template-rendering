@@ -6,4 +6,4 @@ and the return of callbacks.
 from .template_renderer import TemplateRenderer
 from .templating import render_dash_template, render_dash_template_string
 
-__version__ = "0.0.1-alpha1"
+__version__ = "0.0.1-beta1"
