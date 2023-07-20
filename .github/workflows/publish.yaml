@@ -1,0 +1,58 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9
+      - uses: actions/setup-python@61a6322f88396a6271a6ee3565807d608ecaddd1
+        with:
+          python-version: "3.x"
+          cache: "pip"
+          cache-dependency-path: "requirements/*.txt"
+      - run: pip install -r requirements/build.txt
+      # Use the commit date instead of the current date during the build.
+      - run: echo "SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)" >> $GITHUB_ENV
+      - run: python -m build
+      - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
+        with:
+          path: ./dist
+  create-release:
+    # Upload the sdist and wheels to a GitHub release. They remain
+    # available as build artifacts for a while as well.
+    needs: ["build"]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
+      - name: create release
+        run: >
+          gh release create --draft --repo ${{ github.repository }}
+          ${{ github.ref_name }}
+          *.intoto.jsonl/* artifact/*
+        env:
+          GH_TOKEN: ${{ github.token }}
+  publish-pypi:
+    needs: ["build"]
+    # Wait for approval before attempting to upload to PyPI. This allows reviewing the
+    # files in the draft release.
+    environment: "publish"
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
+      - uses: pypa/gh-action-pypi-publish@f5622bde02b04381239da3573277701ceca8f6a0
+        with:
+          repository_url: https://test.pypi.org/legacy/
+          packages_dir: artifact/
+      - uses: pypa/gh-action-pypi-publish@f5622bde02b04381239da3573277701ceca8f6a0
+        with:
+          packages-dir: artifact/
