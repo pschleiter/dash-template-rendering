@@ -32,6 +32,9 @@ dependencies = [
 ]
 dynamic = ["version", "readme"]
 
+[project.urls]
+"Source Code" = "https://github.com/pschleiter/dash-template-rendering"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
