@@ -31,20 +31,21 @@ style_attribute = [
     ("color: blue; font-size: 14px", dict(color="blue", fontSize="14px")),
 ]
 
-TRANSLATION = dict(
-    hreflang="hrefLang",
-    referrerpolicy="referrerPolicy",
-    accesskey="accessKey",
-    contenteditable="contentEditable",
-    spellcheck="spellCheck",
-    tabindex="tabIndex",
-    autofocus="autoFocus",
-    formaction="formAction",
-    formenctype="formEncType",
-    formtarget="formTarget",
-    formnovalidate="formNoValidate",
-    formmethod="formMethod",
-)
+TRANSLATION = {
+    "hreflang": "hrefLang",
+    "referrerpolicy": "referrerPolicy",
+    "accesskey": "accessKey",
+    "contenteditable": "contentEditable",
+    "spellcheck": "spellCheck",
+    "tabindex": "tabIndex",
+    "autofocus": "autoFocus",
+    "formaction": "formAction",
+    "formenctype": "formEncType",
+    "formtarget": "formTarget",
+    "formnovalidate": "formNoValidate",
+    "formmethod": "formMethod",
+    "for": "htmlFor",
+}
 
 
 @pytest.mark.usefixtures("client")
@@ -107,6 +108,43 @@ def test_element_button(style_str, style_dict, **kwargs):
     element = render_dash_template_string(
         source="""
             <button
+            {% for k, v in kwargs.items() %}
+                {% if k == "className" %}
+                    {% set k = "class" %}
+                {% endif %}
+                {{ k }}="{{ v }}"
+            {% endfor %}
+                style="{{ style }}"
+            >
+        """,
+        style=style_str,
+        kwargs=kwargs,
+    )
+
+    for key, value in kwargs.items():
+        assert getattr(element, TRANSLATION.get(key, key)) == value
+
+    assert element.style == style_dict
+
+
+@pytest.mark.usefixtures("client")
+@pytest.mark.parametrize(
+    "style_str,style_dict",
+    style_attribute,
+)
+@given(
+    _for=policy(),
+    **global_attributes,
+)
+def test_element_label(style_str, style_dict, **kwargs):
+    keys = list(kwargs.keys())
+    for k in keys:
+        if k.startswith("_"):
+            kwargs[k[1:]] = kwargs.pop(k)
+
+    element = render_dash_template_string(
+        source="""
+            <label
             {% for k, v in kwargs.items() %}
                 {% if k == "className" %}
                     {% set k = "class" %}
