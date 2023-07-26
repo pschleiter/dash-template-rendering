@@ -151,6 +151,8 @@ def _apply_special_dash_attribute_naming(available_properties, tag_attributes):
         tag_attributes["class_name"] = tag_attributes.pop("class")
     if "className" in available_properties and "class" in tag_attributes:
         tag_attributes["className"] = tag_attributes.pop("class")
+    if "htmlFor" in available_properties and "for" in tag_attributes:
+        tag_attributes["htmlFor"] = tag_attributes.pop("for")
 
     if "style" in tag_attributes and "style" in available_properties:
         styles = {}
