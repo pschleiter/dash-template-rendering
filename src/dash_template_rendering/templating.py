@@ -96,6 +96,10 @@ def _parse_dash_json(data: dict) -> Component:
         if isinstance(element.children, list):
             children = []
             for child in element.children:
+                if isinstance(child, str):
+                    children.append(child)
+                    continue
+
                 children.append(_parse_dash_json(child))
             element.children = children
     return element
