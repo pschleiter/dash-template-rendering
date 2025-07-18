@@ -22,6 +22,7 @@ DASH_TAGS_MAPPING = dict(
 NAMESPACE_MAPPING = {
     "dash_html_components": "dash.html",
     "dash_core_components": "dash.dcc",
+    "dash_table": "dash.dash_table",
 }
 
 
