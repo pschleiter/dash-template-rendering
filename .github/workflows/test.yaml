@@ -18,7 +18,7 @@ jobs:
       - name: Install project
         run: uv sync --locked --group test
       - name: Run type
-        run: uvx ty check
+        run: uvx ty check src tests
 
   lint:
     name: linting
