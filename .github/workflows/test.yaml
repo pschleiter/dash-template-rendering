@@ -85,10 +85,9 @@ jobs:
       - name: Run tests
         run: uv run coverage run -m pytest tests
       - name: Create report
-        run: uv run coverage xml -o coverage.xml
+        run: uv run coverage xml
       - name: Upload test results to Codecov
         if: ${{ !cancelled() }}
         uses: codecov/test-results-action@v1
         with:
-          files: ./coverage.xml
           token: ${{ secrets.CODECOV_TOKEN }}
