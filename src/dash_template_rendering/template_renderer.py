@@ -8,7 +8,7 @@ from markupsafe import Markup
 
 def to_json_plotly_tag(component: Component):
     return Markup(
-        f"<plotly>{plotly.io.json.to_json_plotly(component)}</plotly>",
+        f'<plotly>{plotly.io.json.to_json_plotly(component)}</plotly>',
     )
 
 
@@ -50,4 +50,4 @@ class TemplateRenderer:
         :param dash: The Dash application to initialize.
         """
         self._dash = dash
-        dash.server.jinja_env.filters["plotly"] = to_json_plotly_tag
+        dash.server.jinja_env.filters['plotly'] = to_json_plotly_tag

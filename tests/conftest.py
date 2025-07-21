@@ -1,3 +1,4 @@
+from typing import Iterator
 import pytest
 from flask import Flask
 from dash import Dash, html
@@ -5,9 +6,9 @@ from dash_template_rendering import TemplateRenderer
 
 
 @pytest.fixture
-def app() -> Flask:
-    app = Flask(import_name="test")
-    app.config.from_mapping({"TESTING": True})
+def app() -> Iterator[Flask]:
+    app = Flask(import_name='test')
+    app.config.from_mapping({'TESTING': True})
 
     yield app
 
@@ -57,39 +58,16 @@ def template_string():
 @pytest.fixture
 def dash_row():
     return html.Div(
-        className="row",
+        className='row',
         children=[
             html.Div(
-                className="col-9 col-md-6",
-                children="second row - large column",
+                className='col-9 col-md-6',
+                children='second row - large column',
             ),
             html.Div(
-                className="col-3",
-                children="second row - small column",
+                className='col-3',
+                children='second row - small column',
             ),
-        ],
-    )
-
-
-@pytest.fixture
-def template_dash(dash_row):
-    return html.Div(
-        className="container",
-        children=[
-            html.Div(
-                className="row",
-                children=[
-                    html.Div(
-                        className="col-3 col-md-6",
-                        children="first row - small column",
-                    ),
-                    html.Div(
-                        className="col-9",
-                        children="first row - large column",
-                    ),
-                ],
-            ),
-            dash_row,
         ],
     )
 
@@ -97,61 +75,61 @@ def template_dash(dash_row):
 @pytest.fixture
 def template_json():
     return {
-        "props": {
-            "className": "container",
-            "children": [
+        'props': {
+            'className': 'container',
+            'children': [
                 {
-                    "props": {
-                        "className": "row",
-                        "children": [
+                    'props': {
+                        'className': 'row',
+                        'children': [
                             {
-                                "props": {
-                                    "className": "col-3 col-md-6",
-                                    "children": ["first row - small column"],
+                                'props': {
+                                    'className': 'col-3 col-md-6',
+                                    'children': ['first row - small column'],
                                 },
-                                "type": "Div",
-                                "namespace": "dash_html_components",
+                                'type': 'Div',
+                                'namespace': 'dash_html_components',
                             },
                             {
-                                "props": {
-                                    "className": "col-9",
-                                    "children": ["first row - large column"],
+                                'props': {
+                                    'className': 'col-9',
+                                    'children': ['first row - large column'],
                                 },
-                                "type": "Div",
-                                "namespace": "dash_html_components",
+                                'type': 'Div',
+                                'namespace': 'dash_html_components',
                             },
                         ],
                     },
-                    "type": "Div",
-                    "namespace": "dash_html_components",
+                    'type': 'Div',
+                    'namespace': 'dash_html_components',
                 },
                 {
-                    "props": {
-                        "children": [
+                    'props': {
+                        'children': [
                             {
-                                "props": {
-                                    "children": "second row - large column",
-                                    "className": "col-9 col-md-6",
+                                'props': {
+                                    'children': 'second row - large column',
+                                    'className': 'col-9 col-md-6',
                                 },
-                                "type": "Div",
-                                "namespace": "dash_html_components",
+                                'type': 'Div',
+                                'namespace': 'dash_html_components',
                             },
                             {
-                                "props": {
-                                    "children": "second row - small column",
-                                    "className": "col-3",
+                                'props': {
+                                    'children': 'second row - small column',
+                                    'className': 'col-3',
                                 },
-                                "type": "Div",
-                                "namespace": "dash_html_components",
+                                'type': 'Div',
+                                'namespace': 'dash_html_components',
                             },
                         ],
-                        "className": "row",
+                        'className': 'row',
                     },
-                    "type": "Div",
-                    "namespace": "dash_html_components",
+                    'type': 'Div',
+                    'namespace': 'dash_html_components',
                 },
             ],
         },
-        "type": "Div",
-        "namespace": "dash_html_components",
+        'type': 'Div',
+        'namespace': 'dash_html_components',
     }

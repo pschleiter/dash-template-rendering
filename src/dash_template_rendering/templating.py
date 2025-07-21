@@ -7,6 +7,7 @@ import typing
 import warnings
 
 import bs4
+import bs4.element
 import dash
 from dash.development.base_component import Component
 from flask import render_template, render_template_string
@@ -20,25 +21,25 @@ DASH_TAGS_MAPPING = dict(
 )
 
 NAMESPACE_MAPPING = {
-    "dash_html_components": "dash.html",
-    "dash_core_components": "dash.dcc",
-    "dash_table": "dash.dash_table",
+    'dash_html_components': 'dash.html',
+    'dash_core_components': 'dash.dcc',
+    'dash_table': 'dash.dash_table',
 }
 
 
 def _parse_template(template_string: str) -> Component:
-    soup = bs4.BeautifulSoup(template_string, "html.parser")
+    soup = bs4.BeautifulSoup(template_string, 'html.parser')
     plotly_elements = _parse_elements(html_elements=soup.contents)
     if len(plotly_elements) >= 1:
         if len(plotly_elements) > 1:
             warnings.warn(
-                "Template Tag has more than one main tag, "
-                "which is not supported. "
-                "Only the first tag is used."
+                'Template Tag has more than one main tag, '
+                'which is not supported. '
+                'Only the first tag is used.'
             )
         return plotly_elements[0]
     else:
-        raise ValueError("Empty template in use. Please remove.")
+        raise ValueError('Empty template in use. Please remove.')
 
 
 def _parse_elements(
@@ -60,18 +61,20 @@ def _parse_elements(
                 or isinstance(child, bs4.element.RubyTextString)
             ):
                 warnings.warn(
-                    f"Node type {type(child)} is not supported "
-                    "in templates yet. Node will be skipped."
+                    f'Node type {type(child)} is not supported '
+                    'in templates yet. Node will be skipped.'
                 )
                 continue
             else:
-                text = _parse_navigable_string(child)
-                if text is not None:
+                try:
+                    text = _parse_navigable_string(child)
                     plotly_elements.append(text)
+                except ValueError:
+                    pass
         else:
             warnings.warn(
-                f"Node type {type(child)} is not supported "
-                "in templates yet. Node will be skipped."
+                f'Node type {type(child)} is not supported '
+                'in templates yet. Node will be skipped.'
             )
             continue
 
@@ -86,11 +89,11 @@ def _resolve_namespace(namespace: str) -> str:
 
 def _parse_dash_json(data: dict) -> Component:
     component_class = getattr(
-        importlib.import_module(_resolve_namespace(data["namespace"])),
-        data["type"],
+        importlib.import_module(_resolve_namespace(data['namespace'])),
+        data['type'],
     )
-    element = component_class(**data["props"])
-    if hasattr(element, "children") and element.children is not None:
+    element = component_class(**data['props'])
+    if hasattr(element, 'children') and element.children is not None:
         if isinstance(element.children, dict):
             element.children = [element.children]
 
@@ -107,7 +110,7 @@ def _parse_dash_json(data: dict) -> Component:
 
 
 def _parse_tag(tag: bs4.Tag) -> Component:
-    if tag.name == "plotly":
+    if tag.name == 'plotly':
         return _parse_dash_json(data=json.loads(tag.text))
     elif tag.name.lower() in DASH_TAGS_MAPPING.keys():
         component_class = DASH_TAGS_MAPPING[tag.name.lower()]
@@ -115,9 +118,9 @@ def _parse_tag(tag: bs4.Tag) -> Component:
 
         tag_attributes = tag.attrs
 
-        tag_attributes.update(
-            {k: " ".join(v) for k, v in tag_attributes.items() if isinstance(v, list)}
-        )
+        tag_attributes.update({
+            k: ' '.join(v) for k, v in tag_attributes.items() if isinstance(v, list)
+        })
 
         _apply_special_dash_attribute_naming(
             available_properties=available_properties, tag_attributes=tag_attributes
@@ -127,22 +130,24 @@ def _parse_tag(tag: bs4.Tag) -> Component:
             filter(lambda x: x is not None, _parse_elements(tag.contents)),
         )
         if len(children) > 0:
-            tag_attributes["children"] = children
+            tag_attributes['children'] = children
 
         try:
             return component_class(**tag_attributes)
         except TypeError as e:
-            pretty_tag = textwrap.indent(
-                textwrap.shorten(tag.prettify(), width=200), "+ "
-            )
+            tag_content = tag.prettify(encoding=None)
+            if not isinstance(tag_content, str):
+                tag_content = tag_content.decode(encoding='utf8')
+
+            pretty_tag = textwrap.indent(textwrap.shorten(tag_content, width=200), '+ ')
             raise TypeError(
-                f"Generating dash component from html tag failed.\n"
-                f"HTML Tag:\n"
-                f"{pretty_tag}\n"
-                f"Dash Failure:\n{textwrap.indent(e.args[0], '+ ')}"
+                f'Generating dash component from html tag failed.\n'
+                f'HTML Tag:\n'
+                f'{pretty_tag}\n'
+                f'Dash Failure:\n{textwrap.indent(e.args[0], "+ ")}'
             )
     raise TypeError(
-        f"Generating dash component from html tag failed. "
+        f'Generating dash component from html tag failed. '
         f'No corresponding dash component found for html tag "{tag.name}".'
     )
 
@@ -152,25 +157,25 @@ def _apply_special_dash_attribute_naming(available_properties, tag_attributes):
         if dash_name.lower() in tag_attributes:
             tag_attributes[dash_name] = tag_attributes.pop(dash_name.lower())
 
-    if "class_name" in available_properties and "class" in tag_attributes:
-        tag_attributes["class_name"] = tag_attributes.pop("class")
-    if "className" in available_properties and "class" in tag_attributes:
-        tag_attributes["className"] = tag_attributes.pop("class")
-    if "htmlFor" in available_properties and "for" in tag_attributes:
-        tag_attributes["htmlFor"] = tag_attributes.pop("for")
+    if 'class_name' in available_properties and 'class' in tag_attributes:
+        tag_attributes['class_name'] = tag_attributes.pop('class')
+    if 'className' in available_properties and 'class' in tag_attributes:
+        tag_attributes['className'] = tag_attributes.pop('class')
+    if 'htmlFor' in available_properties and 'for' in tag_attributes:
+        tag_attributes['htmlFor'] = tag_attributes.pop('for')
 
-    if "style" in tag_attributes and "style" in available_properties:
+    if 'style' in tag_attributes and 'style' in available_properties:
         styles = {}
-        for style in tag_attributes["style"].split(";"):
-            key, _, value = style.partition(":")
-            key = re.sub(r"\-(\w)", lambda y: y.group(1).upper(), key).strip()
+        for style in tag_attributes['style'].split(';'):
+            key, _, value = style.partition(':')
+            key = re.sub(r'\-(\w)', lambda y: y.group(1).upper(), key).strip()
             value = value.strip()
             if len(key) == 0:
                 continue
 
             styles[key] = value
 
-        tag_attributes["style"] = styles
+        tag_attributes['style'] = styles
 
 
 def _parse_navigable_string(navigable_string: bs4.NavigableString) -> str:
@@ -178,7 +183,8 @@ def _parse_navigable_string(navigable_string: bs4.NavigableString) -> str:
     if text:
         return text
     else:
-        return None
+        msg = f'{navigable_string} has not text.'
+        raise ValueError(msg)
 
 
 def render_dash_template(
