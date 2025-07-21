@@ -81,7 +81,9 @@ jobs:
           python-version-file: ".python-version"
           enable-cache: true
       - name: Install project
-        run: uv sync --locked --group test coverage run -m pytest tests --junitxml=junit.xml -o junit_family=legacy
+        run: uv sync --locked --group test
+      - name: Run tests
+        run: uv run coverage run -m pytest tests --junitxml=junit.xml -o junit_family=legacy
       - name: Upload test results to Codecov
         if: ${{ !cancelled() }}
         uses: codecov/test-results-action@v1
