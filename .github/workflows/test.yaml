@@ -17,8 +17,8 @@ jobs:
           enable-cache: true
       - name: Install project
         run: uv sync --locked --group test
-      - name: Run tests
-        run: uv run pytest tests
+      - name: Run type
+        run: uvx ty check
 
   lint:
     name: linting
@@ -32,10 +32,8 @@ jobs:
           version: "0.8.0"
           python-version-file: ".python-version"
           enable-cache: true
-      - name: Install project
-        run: uv sync --locked --group test
-      - name: Run tests
-        run: uv run pytest tests
+      - name: Run lint
+        run: uvx ruff==0.9.1 check
 
   tests:
     name: tests
