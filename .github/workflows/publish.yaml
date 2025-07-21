@@ -1,58 +1,76 @@
 name: Publish
 
-on:
-  push:
-    tags:
-      - "*"
+on: push
 
 jobs:
   build:
-    name: build
+    name: Build
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9
-      - uses: actions/setup-python@61a6322f88396a6271a6ee3565807d608ecaddd1
-        with:
-          python-version: "3.x"
-          cache: "pip"
-          cache-dependency-path: "requirements/*.txt"
-      - run: pip install -r requirements/build.txt
-      # Use the commit date instead of the current date during the build.
-      - run: echo "SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)" >> $GITHUB_ENV
-      - run: python -m build
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          path: ./dist
-  create-release:
-    # Upload the sdist and wheels to a GitHub release. They remain
-    # available as build artifacts for a while as well.
-    needs: ["build"]
+    - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version-file: '.python-version'
+    - name: Install pypa/build
+      run: >-
+        python3 -m
+        pip install
+        build
+        --user
+    - name: Build a binary wheel and a source tarball
+      run: python3 -m build
+    - name: Store the distribution packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+
+  publish-to-pypi:
+    name: Publish to PyPI
+    if: startsWith(github.ref, 'refs/tags/')  # only publish to PyPI on tag pushes
+    needs:
+    - build
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-      - name: create release
-        run: >
-          gh release create --draft --repo ${{ github.repository }}
-          ${{ github.ref_name }}
-          artifact/*
-        env:
-          GH_TOKEN: ${{ github.token }}
-  publish-pypi:
-    needs: ["build"]
-    # Wait for approval before attempting to upload to PyPI. This allows reviewing the
-    # files in the draft release.
-    environment: "publish"
-    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/dash-template-rendering
     permissions:
       id-token: write
+
     steps:
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-      - uses: pypa/gh-action-pypi-publish@f5622bde02b04381239da3573277701ceca8f6a0
-        with:
-          repository_url: https://test.pypi.org/legacy/
-          packages_dir: artifact/
-      - uses: pypa/gh-action-pypi-publish@f5622bde02b04381239da3573277701ceca8f6a0
-        with:
-          packages-dir: artifact/
+    - name: Download all the dists
+      uses: actions/download-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+
+  publish-to-testpypi:
+    name: Publish to TestPyPI
+    if: github.ref == 'refs/heads/main'
+    needs:
+    - build
+    runs-on: ubuntu-latest
+
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/dash-template-rendering
+
+    permissions:
+      id-token: write
+
+    steps:
+    - name: Download all the dists
+      uses: actions/download-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+    - name: Publish to TestPyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        repository-url: https://test.pypi.org/legacy/

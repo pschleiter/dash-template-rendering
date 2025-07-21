@@ -4,7 +4,7 @@ for the dashboard with jinja2. The rendered content can be used for the ``dash.l
 and the return of callbacks.
 """
 
-from .template_renderer import TemplateRenderer  # noqa: F401
-from .templating import render_dash_template, render_dash_template_string  # noqa: F401
+from .template_renderer import TemplateRenderer
+from .templating import render_dash_template, render_dash_template_string
 
-__version__ = '0.0.1-beta6'
+__all__ = ['TemplateRenderer', 'render_dash_template', 'render_dash_template_string']

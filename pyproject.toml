@@ -1,12 +1,9 @@
-[build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "dash-template-rendering"
+version = "0.0.1b7"
 authors = [{ name = "Patrick Schleiter", email = "git.pschleiter@gmail.com" }]
 description = "Dash Python extention for rendering Jinja2 templates."
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Web Environment",
@@ -15,63 +12,91 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Framework :: Dash",
     "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
+readme = "README.md"
 dependencies = [
-    "dash",
-    "plotly",
-    "flask",
-    "markupsafe",
-    "Jinja2",
-    "beautifulsoup4",
+    "beautifulsoup4>=4.13.4",
+    "dash>=3.1.1",
+    "flask>=3.1.1",
+    "jinja2>=3.1.6",
+    "markupsafe>=3.0.2",
+    "plotly>=6.2.0",
 ]
-dynamic = ["version", "readme"]
-
 [project.urls]
 "Source Code" = "https://github.com/pschleiter/dash-template-rendering"
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.setuptools.dynamic]
-version = { attr = "dash_template_rendering.__version__" }
-readme = { file = ["README.md"], content-type = "text/markdown" }
+[dependency-groups]
+test = [
+    "coverage>=7.9.2",
+    "hypothesis>=6.136.1",
+    "pytest>=8.4.1",
+    "pytest-sugar>=1.0.0",
+]
 
-[tool.pytest.ini_options]
-testpaths = ["tests"]
+[tool.poe]
+executor.type = "uv"
 
-[tool.tox]
-legacy_tox_ini = """
-    [tox]
-    envlist = py38, py39, py310, flake8, coverage
-    skip_missing_interpreters = true
+[tool.poe.tasks]
+test.cmd = 'uv run --group test pytest tests'
+test.help = 'Run pytest test suite'
 
-    [gh-actions]
-    python =
-        3.8: py38
-        3.9: py39
-        3.10: py310
+_coverage_run.cmd = 'uv run --group test coverage run -m pytest tests'
+_coverage_report.cmd = 'uv run --group test coverage report -m'
+coverage.sequence = ["_coverage_run", "_coverage_report"]
+coverage.help = 'Create coverage report for pytest test suite'
+cov.ref = 'coverage'
+cov.help = 'Create coverage report for pytest test suite (alias for coverage)'
 
-    [testenv]
-    deps =
-        -r requirements/tests.txt
-    commands =
-        pytest
+_ruff = 'uvx ruff==0.9.1'
+fmt.ref = '_ruff format'
+fmt.help = 'Run ruff as formatter for the project'
+lint.ref = '_ruff check'
+lint.help = 'Run ruff as linter for the project'
+type.cmd = 'uvx ty check'
+type.help = 'Run ty as type checker for the project'
+ty.ref ='type'
+ty.help = 'Run ty as type checker for the project (alias for type)'
 
-    [testenv:flake8]
-    deps =
-        -r requirements/style.txt
-    commands =
-        flake8 src tests --max-line-length=88
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+indent-width = 4
+include = [
+  "src/**/*.py",
+  "src/**/*.pyi",
+  "tests/**/*.py",
+  "tests/**/*.pyi"
+]
 
-    [testenv:covarage]
-    deps =
-        -r requirements/tests.txt
-    commands =
-        pytest --cov=dash_template_rendering --cov-branch
-"""
+[tool.ruff.format]
+preview = true
+quote-style = "single"
+
+[tool.ruff.lint]
+preview = true
+unfixable = [
+  "F401",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["dash-template-rendering"]
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "single"
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*" = ["PLR2004", "S101", "TID252"]
